@@ -42,6 +42,53 @@ const ProductDetail = () => {
     ?.filter(p => p.id !== product.id)
     .slice(0, 3) || [];
 
+  // Helper to get hex color
+  const getColorHex = (colorName: string) => {
+    const map: Record<string, string> = {
+      'ivory': '#FFFFF0',
+      'blush': '#FFB6C1',
+      'navy': '#000080',
+      'camel': '#C19A6B',
+      'black': '#000000',
+      'charcoal': '#36454F',
+      'terracotta': '#E2725B',
+      'sage': '#9CAF88',
+      'cream': '#FFFDD0',
+      'oatmeal': '#D7C4A7',
+      'heather grey': '#9E9E9E',
+      'champagne': '#F7E7CE',
+      'dusty rose': '#DCAE96',
+      'tan': '#D2B48C',
+      'burgundy': '#722F37',
+      'gold': '#FFD700',
+      'silver': '#C0C0C0',
+      'rose gold': '#B76E79',
+    };
+    return map[colorName.toLowerCase()] || '#E5E5E5';
+  };
+
+  // Helper to get image based on color choice (Mock implementation for Product 1)
+  const getProductImage = () => {
+    if (!product) return "";
+
+    // Demo logic for Silk Button Blouse (ID 1)
+    if (product.id === 1) {
+      const color = product.colors[selectedColor].toLowerCase();
+      if (color === 'navy') return '/assets/clothing-1-navy.png';
+      if (color === 'blush') return '/assets/clothing-1-blush.png';
+    }
+
+    // Demo logic for Flowing Midi Dress (ID 3)
+    if (product.id === 3) {
+      const color = product.colors[selectedColor].toLowerCase();
+      if (color === 'sage') return '/assets/clothing-3-sage.png';
+      if (color === 'terracotta') return '/assets/clothing-3-terracotta.png';
+      if (color === 'cream') return '/assets/clothing-3-cream.png';
+    }
+
+    return product.image;
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Header />
@@ -62,11 +109,11 @@ const ProductDetail = () => {
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16">
             {/* Product Image */}
             <div className="relative">
-              <div className="aspect-[3/4] rounded-3xl overflow-hidden bg-card">
+              <div className="aspect-[3/4] rounded-3xl overflow-hidden bg-card relative">
                 <img
-                  src={product.image}
+                  src={getProductImage()}
                   alt={product.name}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-opacity duration-300"
                 />
               </div>
 
@@ -113,29 +160,11 @@ const ProductDetail = () => {
                       key={color}
                       onClick={() => setSelectedColor(index)}
                       className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-smooth ${selectedColor === index
-                          ? 'border-primary'
-                          : 'border-border hover:border-muted-foreground'
+                        ? 'border-primary'
+                        : 'border-border hover:border-muted-foreground'
                         }`}
                       style={{
-                        backgroundColor: color.toLowerCase() === 'ivory' ? '#FFFFF0' :
-                          color.toLowerCase() === 'blush' ? '#FFB6C1' :
-                            color.toLowerCase() === 'navy' ? '#000080' :
-                              color.toLowerCase() === 'camel' ? '#C19A6B' :
-                                color.toLowerCase() === 'black' ? '#000000' :
-                                  color.toLowerCase() === 'charcoal' ? '#36454F' :
-                                    color.toLowerCase() === 'terracotta' ? '#E2725B' :
-                                      color.toLowerCase() === 'sage' ? '#9CAF88' :
-                                        color.toLowerCase() === 'cream' ? '#FFFDD0' :
-                                          color.toLowerCase() === 'oatmeal' ? '#D7C4A7' :
-                                            color.toLowerCase() === 'heather grey' ? '#9E9E9E' :
-                                              color.toLowerCase() === 'champagne' ? '#F7E7CE' :
-                                                color.toLowerCase() === 'dusty rose' ? '#DCAE96' :
-                                                  color.toLowerCase() === 'tan' ? '#D2B48C' :
-                                                    color.toLowerCase() === 'burgundy' ? '#722F37' :
-                                                      color.toLowerCase() === 'gold' ? '#FFD700' :
-                                                        color.toLowerCase() === 'silver' ? '#C0C0C0' :
-                                                          color.toLowerCase() === 'rose gold' ? '#B76E79' :
-                                                            '#E5E5E5'
+                        backgroundColor: getColorHex(color)
                       }}
                     >
                       {selectedColor === index && (
@@ -158,8 +187,8 @@ const ProductDetail = () => {
                       key={size}
                       onClick={() => setSelectedSize(size)}
                       className={`min-w-[3rem] px-4 py-3 rounded-xl border-2 font-medium transition-smooth ${selectedSize === size
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border hover:border-muted-foreground'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-muted-foreground'
                         }`}
                     >
                       {size}
