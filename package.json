@@ -4,8 +4,8 @@
     "private": true,
     "scripts": {
         "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-        "dev:backend": "c",
-        "dev:frontend": "cd frontend && node_modules\\.bin\\vite.cmd"
+        "dev:backend": "cd backend && uv run uvicorn app.main:app --reload --host 0.0.0.0",
+        "dev:frontend": "cd frontend && npm run dev"
     },
     "devDependencies": {
         "concurrently": "^9.0.0"
