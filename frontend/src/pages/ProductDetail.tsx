@@ -1,19 +1,31 @@
 import { useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import { ArrowLeft, Heart, Share2, Check, Sparkles } from "lucide-react";
+import { ArrowLeft, Heart, Share2, Check, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getProductById, products } from "@/data/products";
+import { useProduct, useProducts } from "@/hooks/useProducts";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const product = getProductById(Number(id));
-  
+  const { data: product, isLoading: productLoading } = useProduct(id ?? "");
+
+  // Use products hook to get related products
+  // In a real app, this should be a dedicated endpoint
+  const { data: allProducts } = useProducts(product?.category);
+
   const [selectedColor, setSelectedColor] = useState(0);
   const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
+
+  if (productLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -26,19 +38,19 @@ const ProductDetail = () => {
     );
   }
 
-  const relatedProducts = products
-    .filter(p => p.category === product.category && p.id !== product.id)
-    .slice(0, 3);
+  const relatedProducts = allProducts
+    ?.filter(p => p.id !== product.id)
+    .slice(0, 3) || [];
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="pt-24 pb-16">
         <div className="container mx-auto px-6">
           {/* Breadcrumb */}
           <nav className="mb-8">
-            <button 
+            <button
               onClick={() => navigate(-1)}
               className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-smooth"
             >
@@ -51,13 +63,13 @@ const ProductDetail = () => {
             {/* Product Image */}
             <div className="relative">
               <div className="aspect-[3/4] rounded-3xl overflow-hidden bg-card">
-                <img 
-                  src={product.image} 
+                <img
+                  src={product.image}
                   alt={product.name}
                   className="w-full h-full object-cover"
                 />
               </div>
-              
+
               {/* Category badge */}
               <div className="absolute top-6 left-6">
                 <span className="px-4 py-2 bg-background/90 backdrop-blur-sm text-foreground text-sm font-medium rounded-full">
@@ -67,11 +79,10 @@ const ProductDetail = () => {
 
               {/* Action buttons */}
               <div className="absolute top-6 right-6 flex gap-2">
-                <button 
+                <button
                   onClick={() => setIsWishlisted(!isWishlisted)}
-                  className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center shadow-soft transition-smooth ${
-                    isWishlisted ? 'bg-primary text-primary-foreground' : 'bg-background/90 hover:bg-background'
-                  }`}
+                  className={`w-12 h-12 rounded-full backdrop-blur-sm flex items-center justify-center shadow-soft transition-smooth ${isWishlisted ? 'bg-primary text-primary-foreground' : 'bg-background/90 hover:bg-background'
+                    }`}
                 >
                   <Heart className={`w-5 h-5 ${isWishlisted ? 'fill-current' : ''}`} />
                 </button>
@@ -101,31 +112,30 @@ const ProductDetail = () => {
                     <button
                       key={color}
                       onClick={() => setSelectedColor(index)}
-                      className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-smooth ${
-                        selectedColor === index 
-                          ? 'border-primary' 
+                      className={`w-12 h-12 rounded-full border-2 flex items-center justify-center transition-smooth ${selectedColor === index
+                          ? 'border-primary'
                           : 'border-border hover:border-muted-foreground'
-                      }`}
-                      style={{ 
+                        }`}
+                      style={{
                         backgroundColor: color.toLowerCase() === 'ivory' ? '#FFFFF0' :
-                                        color.toLowerCase() === 'blush' ? '#FFB6C1' :
-                                        color.toLowerCase() === 'navy' ? '#000080' :
-                                        color.toLowerCase() === 'camel' ? '#C19A6B' :
-                                        color.toLowerCase() === 'black' ? '#000000' :
-                                        color.toLowerCase() === 'charcoal' ? '#36454F' :
-                                        color.toLowerCase() === 'terracotta' ? '#E2725B' :
-                                        color.toLowerCase() === 'sage' ? '#9CAF88' :
+                          color.toLowerCase() === 'blush' ? '#FFB6C1' :
+                            color.toLowerCase() === 'navy' ? '#000080' :
+                              color.toLowerCase() === 'camel' ? '#C19A6B' :
+                                color.toLowerCase() === 'black' ? '#000000' :
+                                  color.toLowerCase() === 'charcoal' ? '#36454F' :
+                                    color.toLowerCase() === 'terracotta' ? '#E2725B' :
+                                      color.toLowerCase() === 'sage' ? '#9CAF88' :
                                         color.toLowerCase() === 'cream' ? '#FFFDD0' :
-                                        color.toLowerCase() === 'oatmeal' ? '#D7C4A7' :
-                                        color.toLowerCase() === 'heather grey' ? '#9E9E9E' :
-                                        color.toLowerCase() === 'champagne' ? '#F7E7CE' :
-                                        color.toLowerCase() === 'dusty rose' ? '#DCAE96' :
-                                        color.toLowerCase() === 'tan' ? '#D2B48C' :
-                                        color.toLowerCase() === 'burgundy' ? '#722F37' :
-                                        color.toLowerCase() === 'gold' ? '#FFD700' :
-                                        color.toLowerCase() === 'silver' ? '#C0C0C0' :
-                                        color.toLowerCase() === 'rose gold' ? '#B76E79' :
-                                        '#E5E5E5'
+                                          color.toLowerCase() === 'oatmeal' ? '#D7C4A7' :
+                                            color.toLowerCase() === 'heather grey' ? '#9E9E9E' :
+                                              color.toLowerCase() === 'champagne' ? '#F7E7CE' :
+                                                color.toLowerCase() === 'dusty rose' ? '#DCAE96' :
+                                                  color.toLowerCase() === 'tan' ? '#D2B48C' :
+                                                    color.toLowerCase() === 'burgundy' ? '#722F37' :
+                                                      color.toLowerCase() === 'gold' ? '#FFD700' :
+                                                        color.toLowerCase() === 'silver' ? '#C0C0C0' :
+                                                          color.toLowerCase() === 'rose gold' ? '#B76E79' :
+                                                            '#E5E5E5'
                       }}
                     >
                       {selectedColor === index && (
@@ -147,11 +157,10 @@ const ProductDetail = () => {
                     <button
                       key={size}
                       onClick={() => setSelectedSize(size)}
-                      className={`min-w-[3rem] px-4 py-3 rounded-xl border-2 font-medium transition-smooth ${
-                        selectedSize === size 
-                          ? 'border-primary bg-primary/10 text-primary' 
+                      className={`min-w-[3rem] px-4 py-3 rounded-xl border-2 font-medium transition-smooth ${selectedSize === size
+                          ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border hover:border-muted-foreground'
-                      }`}
+                        }`}
                     >
                       {size}
                     </button>
@@ -191,14 +200,14 @@ const ProductDetail = () => {
               <h2 className="font-display text-3xl font-medium mb-8">You May Also Like</h2>
               <div className="grid md:grid-cols-3 gap-8">
                 {relatedProducts.map((item) => (
-                  <Link 
-                    key={item.id} 
+                  <Link
+                    key={item.id}
                     to={`/product/${item.id}`}
                     className="group"
                   >
                     <div className="relative aspect-[3/4] rounded-2xl overflow-hidden bg-card mb-4">
-                      <img 
-                        src={item.image} 
+                      <img
+                        src={item.image}
                         alt={item.name}
                         className="w-full h-full object-cover transition-smooth group-hover:scale-105"
                       />

@@ -1,20 +1,37 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowLeft } from "lucide-react";
 import heroModel from "@/assets/hero-model.jpg";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner"; // Assuming sonner is installed as per package.json
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle login logic here
-    console.log("Login:", { email, password });
+    setLoading(true);
+    try {
+      const response = await api.post("/auth/login", { email, password });
+      login(response.data.token, response.data.user);
+      toast.success("Welcome back!");
+      navigate("/");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.detail || "Login failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

@@ -1,11 +1,14 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, ArrowLeft, Check } from "lucide-react";
 import heroModel from "@/assets/hero-model.jpg";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { toast } from "sonner";
 
 const Signup = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -15,11 +18,38 @@ const Signup = () => {
     password: "",
     agreeToTerms: false,
   });
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const { login } = useAuth();
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle signup logic here
-    console.log("Signup:", formData);
+    setLoading(true);
+
+    try {
+      // 1. Signup
+      await api.post("/auth/signup", {
+        email: formData.email,
+        password: formData.password,
+        fullName: formData.fullName
+      });
+
+      // 2. Login automatically
+      const response = await api.post("/auth/login", {
+        email: formData.email,
+        password: formData.password
+      });
+
+      login(response.data.token, response.data.user);
+      toast.success("Account created successfully!");
+      navigate("/");
+    } catch (error: any) {
+      console.error(error);
+      toast.error(error.response?.data?.detail || "Signup failed");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const passwordRequirements = [
@@ -154,14 +184,12 @@ const Signup = () => {
                   {passwordRequirements.map((req, index) => (
                     <div
                       key={index}
-                      className={`flex items-center gap-2 text-sm ${
-                        req.met ? "text-green-600" : "text-muted-foreground"
-                      }`}
+                      className={`flex items-center gap-2 text-sm ${req.met ? "text-green-600" : "text-muted-foreground"
+                        }`}
                     >
                       <Check
-                        className={`w-4 h-4 ${
-                          req.met ? "opacity-100" : "opacity-30"
-                        }`}
+                        className={`w-4 h-4 ${req.met ? "opacity-100" : "opacity-30"
+                          }`}
                       />
                       {req.label}
                     </div>
