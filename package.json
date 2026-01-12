@@ -1,0 +1,13 @@
+{
+    "name": "virtual-wardrobe-root",
+    "version": "1.0.0",
+    "private": true,
+    "scripts": {
+        "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+        "dev:backend": "c",
+        "dev:frontend": "cd frontend && node_modules\\.bin\\vite.cmd"
+    },
+    "devDependencies": {
+        "concurrently": "^9.0.0"
+    }
+}
