@@ -86,6 +86,13 @@ const ProductDetail = () => {
       if (color === 'cream') return '/assets/clothing-3-cream.png';
     }
 
+    // Demo logic for Tailored Camel Blazer (ID 2)
+    if (product.id === 2) {
+      const color = product.colors[selectedColor].toLowerCase();
+      if (color === 'black') return '/assets/clothing-2-black.jpg';
+      if (color === 'charcoal') return '/assets/clothing-2-charcoal.jpg';
+    }
+
     return product.image;
   };
 
