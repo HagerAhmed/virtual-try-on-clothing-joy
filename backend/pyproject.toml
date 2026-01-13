@@ -14,4 +14,5 @@ dependencies = [
     "python-jose[cryptography]>=3.5.0",
     "python-multipart>=0.0.21",
     "uvicorn>=0.40.0",
+    "gradio-client>=2.0.0",
 ]
