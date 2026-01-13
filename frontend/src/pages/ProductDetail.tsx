@@ -5,11 +5,13 @@ import { Button } from "@/components/ui/button";
 import { useProduct, useProducts } from "@/hooks/useProducts";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import { VirtualTryOnModal } from "@/components/VirtualTryOnModal";
 
 const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading: productLoading } = useProduct(id ?? "");
+  const [isTryOnModalOpen, setIsTryOnModalOpen] = useState(false);
 
   // Use products hook to get related products
   // In a real app, this should be a dedicated endpoint
@@ -206,7 +208,12 @@ const ProductDetail = () => {
 
               {/* Action Buttons */}
               <div className="space-y-4 mb-8">
-                <Button variant="hero" size="lg" className="w-full gap-2">
+                <Button
+                  variant="hero"
+                  size="lg"
+                  className="w-full gap-2"
+                  onClick={() => setIsTryOnModalOpen(true)}
+                >
                   <Sparkles className="w-5 h-5" />
                   Try It On Virtually
                 </Button>
@@ -261,6 +268,17 @@ const ProductDetail = () => {
       </main>
 
       <Footer />
+
+      {/* Virtual Try-On Modal */}
+      <VirtualTryOnModal
+        isOpen={isTryOnModalOpen}
+        onClose={() => setIsTryOnModalOpen(false)}
+        productImage={getProductImage()}
+        productName={product.name}
+        productId={product.id}
+        selectedColor={product.colors[selectedColor]}
+        selectedSize={selectedSize || undefined}
+      />
     </div>
   );
 };

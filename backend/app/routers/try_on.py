@@ -4,6 +4,10 @@ import os
 import shutil
 import uuid
 from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 router = APIRouter(prefix="/try-on", tags=["Virtual Try-On"])
 
@@ -20,8 +24,18 @@ class TryOnAgent:
             try:
                 from gradio_client import Client
                 print("Initializing VTON Client (levihsu/OOTDiffusion)...")
-                self.client = Client("levihsu/OOTDiffusion")
-                print("VTON Client initialized successfully.")
+                
+                # Check for Hugging Face token (optional, increases quota)
+                hf_token = os.getenv("HUGGINGFACE_TOKEN")
+                if hf_token:
+                    # Set token in environment for gradio_client to use
+                    os.environ["HF_TOKEN"] = hf_token
+                    self.client = Client("levihsu/OOTDiffusion")
+                    print("VTON Client initialized with authentication.")
+                else:
+                    self.client = Client("levihsu/OOTDiffusion")
+                    print("VTON Client initialized (anonymous - limited quota).")
+                    
                 self._client_initialized = True
             except Exception as e:
                 print(f"Failed to initialize VTON Client: {e}")
@@ -97,14 +111,14 @@ class TryOnAgent:
             from gradio_client import handle_file
             print(f"Sending request to OOTDiffusion: {category} for product {product_id}")
             
-            # Call the OOTDiffusion API
+            # Call the OOTDiffusion API with optimized parameters
             result = self.client.predict(
                 vton_img=handle_file(str(user_img_path)),
                 garm_img=handle_file(garment_img_path),
                 category=category,
                 n_samples=1,
-                n_steps=20,
-                image_scale=2.0,
+                n_steps=30,  # Increased from 20 for better quality
+                image_scale=2.5,  # Increased from 2.0 for better adherence
                 seed=-1,
                 api_name="/process_dc"
             )
@@ -113,18 +127,18 @@ class TryOnAgent:
             if result and len(result) > 0:
                 generated_img_path = result[0]['image']
                 
-                # Copy result to public assets
-                output_filename = f"generated_{uuid.uuid4()}.jpg"
-                public_assets = Path(__file__).parent.parent.parent.parent / "frontend" / "public" / "try-on-results"
-                public_assets.mkdir(parents=True, exist_ok=True)
-                
-                shutil.copy(generated_img_path, public_assets / output_filename)
+                # Read the image and convert to base64
+                import base64
+                with open(generated_img_path, 'rb') as img_file:
+                    img_data = base64.b64encode(img_file.read()).decode('utf-8')
                 
                 # Cleanup temp file
-                os.remove(user_img_path)
+                if os.path.exists(user_img_path):
+                    os.remove(user_img_path)
                 
-                print(f"Successfully generated try-on result: {output_filename}")
-                return f"/try-on-results/{output_filename}"
+                print(f"Successfully generated try-on result")
+                # Return as data URL
+                return f"data:image/jpeg;base64,{img_data}"
                 
         except Exception as e:
             print(f"OOTDiffusion failed: {e}")
