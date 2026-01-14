@@ -26,9 +26,17 @@ api.interceptors.response.use(
     (response) => response,
     (error) => {
         if (error.response?.status === 401) {
-            // Clear token and redirect to login if received 401
+            // Clear token and dispatch logout event
             localStorage.removeItem("token");
-            // Optional: Redirect to login page or dispatch an event
+            localStorage.removeItem("user");
+
+            // Dispatch custom event for AuthContext to listen to
+            window.dispatchEvent(new CustomEvent("auth:logout"));
+
+            // Redirect to login if not already there
+            if (!window.location.pathname.includes("/login")) {
+                window.location.href = "/login";
+            }
         }
         return Promise.reject(error);
     }

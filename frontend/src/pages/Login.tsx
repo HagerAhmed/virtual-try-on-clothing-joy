@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ const Login = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,7 +26,10 @@ const Login = () => {
       const response = await api.post("/auth/login", { email, password });
       login(response.data.token, response.data.user);
       toast.success("Welcome back!");
-      navigate("/");
+
+      // Redirect to intended destination or home
+      const from = (location.state as any)?.from?.pathname || "/";
+      navigate(from, { replace: true });
     } catch (error: any) {
       console.error(error);
       toast.error(error.response?.data?.detail || "Login failed");
@@ -142,8 +146,8 @@ const Login = () => {
               </div>
             </div>
 
-            <Button type="submit" variant="hero" className="w-full h-12">
-              Sign In
+            <Button type="submit" variant="hero" className="w-full h-12" disabled={loading}>
+              {loading ? "Signing in..." : "Sign In"}
             </Button>
           </form>
 

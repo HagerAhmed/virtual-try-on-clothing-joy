@@ -1,10 +1,11 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import api from "@/lib/api";
 
 interface User {
     id: number;
     email: string;
-    fullName: string;
+    full_name?: string;
 }
 
 interface AuthContextType {
@@ -22,15 +23,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Check for existing token on mount
-        const token = localStorage.getItem("token");
-        const storedUser = localStorage.getItem("user");
+        // Validate token on mount by calling /me endpoint
+        const validateToken = async () => {
+            const token = localStorage.getItem("token");
 
-        if (token && storedUser) {
-            setUser(JSON.parse(storedUser));
-        }
+            if (!token) {
+                setLoading(false);
+                return;
+            }
 
-        setLoading(false);
+            try {
+                // Verify token with backend
+                const response = await api.get("/auth/me");
+                setUser(response.data);
+            } catch (error) {
+                // Token is invalid or expired, clear it
+                console.error("Token validation failed:", error);
+                localStorage.removeItem("token");
+                localStorage.removeItem("user");
+                setUser(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        validateToken();
     }, []);
 
     const login = (token: string, user: User) => {
@@ -43,6 +60,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
         setUser(null);
+        // Redirect to home page after logout
+        window.location.href = "/";
     };
 
     return (

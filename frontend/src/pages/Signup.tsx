@@ -28,19 +28,14 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      // 1. Signup
-      await api.post("/auth/signup", {
+      // Signup now returns token directly
+      const response = await api.post("/auth/signup", {
         email: formData.email,
         password: formData.password,
-        fullName: formData.fullName
+        full_name: formData.fullName
       });
 
-      // 2. Login automatically
-      const response = await api.post("/auth/login", {
-        email: formData.email,
-        password: formData.password
-      });
-
+      // Login with the returned token and user
       login(response.data.token, response.data.user);
       toast.success("Account created successfully!");
       navigate("/");
@@ -226,9 +221,9 @@ const Signup = () => {
               type="submit"
               variant="hero"
               className="w-full h-12"
-              disabled={!formData.agreeToTerms}
+              disabled={!formData.agreeToTerms || loading}
             >
-              Create Account
+              {loading ? "Creating account..." : "Create Account"}
             </Button>
           </form>
 

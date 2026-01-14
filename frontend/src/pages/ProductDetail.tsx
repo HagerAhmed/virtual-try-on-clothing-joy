@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import { ArrowLeft, Heart, Share2, Check, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useProduct, useProducts } from "@/hooks/useProducts";
+import { useCart } from "@/context/CartContext";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import { VirtualTryOnModal } from "@/components/VirtualTryOnModal";
@@ -11,6 +12,7 @@ const ProductDetail = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: product, isLoading: productLoading } = useProduct(id ?? "");
+  const { addToCart } = useCart();
   const [isTryOnModalOpen, setIsTryOnModalOpen] = useState(false);
 
   // Use products hook to get related products
@@ -217,8 +219,23 @@ const ProductDetail = () => {
                   <Sparkles className="w-5 h-5" />
                   Try It On Virtually
                 </Button>
-                <Button variant="default" size="lg" className="w-full">
-                  Add to Bag
+                <Button
+                  variant="default"
+                  size="lg"
+                  className="w-full"
+                  disabled={!selectedSize}
+                  onClick={() => {
+                    if (product) {
+                      addToCart(
+                        product.id,
+                        selectedSize || "",
+                        product.colors[selectedColor],
+                        1
+                      );
+                    }
+                  }}
+                >
+                  {!selectedSize ? "Select a Size" : "Add to Bag"}
                 </Button>
               </div>
 
