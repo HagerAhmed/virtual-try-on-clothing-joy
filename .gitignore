@@ -16,3 +16,27 @@ venv/
 # OS
 .DS_Store
 Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+backend/sql_app.db
+backend/test_integration.db
+
+# Testing & Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Build & Dist
+dist/
+build/
+
+# Temporary
+temp/
+backend/temp/
+
+# IDE
+.vscode/
+.idea/

@@ -1,6 +1,15 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .routers import auth, products, cart, try_on
+from .database import engine, Base, SessionLocal, init_db
+
+# Create Tables
+Base.metadata.create_all(bind=engine)
+
+# Seed Data
+db = SessionLocal()
+init_db(db)
+db.close()
 
 app = FastAPI(
     title="Virtual Wardrobe API",
@@ -8,7 +17,6 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS
 # CORS
 origins = ["*"]
 

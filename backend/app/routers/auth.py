@@ -1,16 +1,16 @@
 from fastapi import APIRouter, HTTPException, status, Depends
 from fastapi.security import OAuth2PasswordBearer
-from typing import Optional
-from ..models import User, UserCreate, UserLogin, AuthResponse, Token
-from ..database import users, user_passwords
-from ..auth_utils import verify_password, get_password_hash, create_access_token, decode_access_token, SECRET_KEY, ALGORITHM
+from sqlalchemy.orm import Session
+from .. import models, schemas
+from ..database import get_db
+from ..auth_utils import verify_password, get_password_hash, create_access_token, SECRET_KEY, ALGORITHM
 from jose import JWTError, jwt
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
-async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
+async def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(get_db)) -> schemas.User:
     """
     Dependency to get the current authenticated user from JWT token.
     Raises 401 if token is invalid or expired.
@@ -36,25 +36,25 @@ async def get_current_user(token: str = Depends(oauth2_scheme)) -> User:
             )
         raise credentials_exception
     
-    user = users.get(email)
+    user = db.query(models.User).filter(models.User.email == email).first()
     if user is None:
         raise credentials_exception
     return user
 
-@router.get("/me", response_model=User)
-async def get_me(current_user: User = Depends(get_current_user)):
+@router.get("/me", response_model=schemas.User)
+async def get_me(current_user: models.User = Depends(get_current_user)):
     """
     Get the current authenticated user.
-    This endpoint is used to verify the token and get user details.
     """
     return current_user
 
-@router.post("/signup", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
-async def signup(user: UserCreate):
+@router.post("/signup", response_model=schemas.AuthResponse, status_code=status.HTTP_201_CREATED)
+async def signup(user: schemas.UserCreate, db: Session = Depends(get_db)):
     """
     Create a new user account and return authentication token.
     """
-    if user.email in users:
+    db_user = db.query(models.User).filter(models.User.email == user.email).first()
+    if db_user:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Email already registered"
@@ -68,35 +68,34 @@ async def signup(user: UserCreate):
         )
     
     hashed_password = get_password_hash(user.password)
-    user_passwords[user.email] = hashed_password
     
     # Create new user
-    new_user_id = len(users) + 1
-    new_user = User(
-        id=new_user_id,
+    new_user = models.User(
         email=user.email,
-        full_name=user.full_name
+        full_name=user.full_name,
+        hashed_password=hashed_password
     )
-    users[user.email] = new_user
+    db.add(new_user)
+    db.commit()
+    db.refresh(new_user)
     
     # Create and return token directly
-    access_token = create_access_token(data={"sub": user.email})
+    access_token = create_access_token(data={"sub": new_user.email})
     return {"token": access_token, "user": new_user}
 
-@router.post("/login", response_model=AuthResponse)
-async def login(user_credentials: UserLogin):
+@router.post("/login", response_model=schemas.AuthResponse)
+async def login(user_credentials: schemas.UserLogin, db: Session = Depends(get_db)):
     """
     Authenticate user and return JWT token.
     """
-    user = users.get(user_credentials.email)
+    user = db.query(models.User).filter(models.User.email == user_credentials.email).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
         )
     
-    hashed_password = user_passwords.get(user_credentials.email)
-    if not hashed_password or not verify_password(user_credentials.password, hashed_password):
+    if not verify_password(user_credentials.password, user.hashed_password):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credentials"
@@ -106,7 +105,7 @@ async def login(user_credentials: UserLogin):
     return {"token": access_token, "user": user}
 
 @router.post("/logout")
-async def logout(current_user: User = Depends(get_current_user)):
+async def logout(current_user: models.User = Depends(get_current_user)):
     """
     Logout endpoint (token invalidation handled on client side).
     """

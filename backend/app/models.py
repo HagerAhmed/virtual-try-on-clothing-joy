@@ -1,72 +1,61 @@
-from pydantic import BaseModel, EmailStr
-from typing import List, Optional
+from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, Float, JSON, Table
+from sqlalchemy.orm import relationship
+from .database import Base
 
-# User Models
-class UserBase(BaseModel):
-    email: EmailStr
-    full_name: Optional[str] = None
+# Association table for Wishlist (User <-> Product)
+wishlist_table = Table(
+    'wishlist',
+    Base.metadata,
+    Column('user_id', Integer, ForeignKey('users.id'), primary_key=True),
+    Column('product_id', Integer, ForeignKey('products.id'), primary_key=True)
+)
 
-class UserCreate(UserBase):
-    password: str
+class User(Base):
+    __tablename__ = "users"
 
-class UserLogin(BaseModel):
-    email: EmailStr
-    password: str
+    id = Column(Integer, primary_key=True, index=True)
+    email = Column(String, unique=True, index=True)
+    hashed_password = Column(String)
+    full_name = Column(String, nullable=True)
 
-class User(UserBase):
-    id: int
+    cart = relationship("Cart", back_populates="user", uselist=False)
+    wishlist = relationship("Product", secondary=wishlist_table)
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, index=True)
+    brand = Column(String)
+    price = Column(Float)
+    image = Column(String)
+    category = Column(String, index=True)
+    description = Column(String)
     
-    class Config:
-        from_attributes = True
+    # Store lists as JSON
+    colors = Column(JSON)
+    sizes = Column(JSON)
+    details = Column(JSON)
 
-# Token Models
-class Token(BaseModel):
-    access_token: str
-    token_type: str
+class Cart(Base):
+    __tablename__ = "carts"
 
-class TokenData(BaseModel):
-    email: Optional[str] = None
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"))
+    total = Column(Float, default=0.0)
 
-class AuthResponse(BaseModel):
-    token: str
-    user: User
+    user = relationship("User", back_populates="cart")
+    items = relationship("CartItem", back_populates="cart", cascade="all, delete-orphan")
 
-# Product Models
-class Product(BaseModel):
-    id: int
-    name: str
-    brand: str
-    price: float
-    image: str
-    category: str
-    description: str
-    colors: List[str]
-    sizes: List[str]
-    details: List[str]
+class CartItem(Base):
+    __tablename__ = "cart_items"
 
-# Cart Models
-class CartItemCreate(BaseModel):
-    product_id: int
-    quantity: int = 1
-    size: str
-    color: str
+    id = Column(Integer, primary_key=True, index=True)
+    cart_id = Column(Integer, ForeignKey("carts.id"))
+    product_id = Column(Integer, ForeignKey("products.id"))
+    quantity = Column(Integer, default=1)
+    size = Column(String)
+    color = Column(String)
 
-class CartItem(BaseModel):
-    id: int
-    product: Product
-    quantity: int
-    size: str
-    color: str
-
-class Cart(BaseModel):
-    id: int
-    items: List[CartItem]
-    total: float
-
-# Wishlist Models
-class WishlistItemCreate(BaseModel):
-    product_id: int
-
-# Try On Models
-class TryOnResult(BaseModel):
-    result_image: str
+    cart = relationship("Cart", back_populates="items")
+    product = relationship("Product")

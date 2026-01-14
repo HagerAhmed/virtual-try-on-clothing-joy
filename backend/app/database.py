@@ -1,26 +1,49 @@
-from typing import List, Dict, Optional
-from .models import User, Product, Cart, CartItem, UserCreate
+from sqlalchemy import create_engine
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+import os
+import json
 
-# Mock Data Storage
-users: Dict[str, User] = {}  # email -> User
-products: List[Product] = []
-carts: Dict[int, Cart] = {} # user_id -> Cart
-wishlists: Dict[int, List[Product]] = {} # user_id -> List[Product]
+# Default to SQLite for simplicity if POSTGRES_URL not provided
+SQLALCHEMY_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./sql_app.db")
+# For Postgres: 
+# SQLALCHEMY_DATABASE_URL = "postgresql://user:password@postgresserver/db"
 
-# Password hashing mock (simplified for now, usually handled in auth service)
-# In a real app, 'hashed_password' would be stored.
-user_passwords: Dict[str, str] = {} # email -> hashed_password
+check_same_thread = False
+if "sqlite" in SQLALCHEMY_DATABASE_URL:
+    check_same_thread = True
+    connect_args = {"check_same_thread": False}
+else:
+    connect_args = {}
 
-# Initialize some products
-def init_products():
-    from .models import Product
-    # Using the same data as frontend/src/data/products.ts
+engine = create_engine(
+    SQLALCHEMY_DATABASE_URL, connect_args=connect_args
+)
+SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+
+Base = declarative_base()
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+# Seed data
+def init_db(db):
+    from . import models
+    
+    # Check if products exist
+    if db.query(models.Product).first():
+        return
+
     mock_products = [
       { 
         "id": 1, 
         "name": "Silk Button Blouse", 
         "brand": "Everlane", 
-        "price": 128, 
+        "price": 128.0, 
         "image": "/assets/clothing-1.jpg", 
         "category": "Tops",
         "description": "Crafted from 100% mulberry silk, this relaxed-fit blouse features a subtle sheen that transitions effortlessly from office to evening. The covered button placket and soft collar create a polished, refined silhouette.",
@@ -32,7 +55,7 @@ def init_products():
         "id": 2, 
         "name": "Tailored Camel Blazer", 
         "brand": "COS", 
-        "price": 275, 
+        "price": 275.0, 
         "image": "/assets/clothing-2.jpg", 
         "category": "Outerwear",
         "description": "A modern take on the classic blazer, featuring clean lines and a structured silhouette. Made from a premium wool blend that drapes beautifully while maintaining its shape throughout the day.",
@@ -44,7 +67,7 @@ def init_products():
         "id": 3, 
         "name": "Flowing Midi Dress", 
         "brand": "Reformation", 
-        "price": 198, 
+        "price": 198.0, 
         "image": "/assets/clothing-3.jpg", 
         "category": "Dresses",
         "description": "This effortlessly elegant midi dress features a flattering A-line silhouette that moves gracefully with every step. Perfect for warm-weather occasions or layered under a blazer for cooler months.",
@@ -56,7 +79,7 @@ def init_products():
         "id": 4, 
         "name": "Wide-Leg Trousers", 
         "brand": "Theory", 
-        "price": 245, 
+        "price": 245.0, 
         "image": "/assets/clothing-4.jpg", 
         "category": "Bottoms",
         "description": "Sophisticated wide-leg trousers crafted from a premium stretch wool blend. The high waist and flowing silhouette create an elongating effect, while the tailored details ensure a polished finish.",
@@ -68,7 +91,7 @@ def init_products():
         "id": 5, 
         "name": "Cashmere Ribbed Sweater", 
         "brand": "Vince", 
-        "price": 365, 
+        "price": 365.0, 
         "image": "/assets/clothing-5.jpg", 
         "category": "Tops",
         "description": "Luxuriously soft cashmere sweater with a classic ribbed texture. The relaxed fit and slightly oversized silhouette make it perfect for layering or wearing on its own.",
@@ -80,7 +103,7 @@ def init_products():
         "id": 6, 
         "name": "Pleated Maxi Skirt", 
         "brand": "Aritzia", 
-        "price": 168, 
+        "price": 168.0, 
         "image": "/assets/clothing-6.jpg", 
         "category": "Bottoms",
         "description": "Elegant pleated maxi skirt that adds movement and drama to any outfit. The flowing silhouette and high waist create a universally flattering fit.",
@@ -92,7 +115,7 @@ def init_products():
         "id": 7, 
         "name": "Leather Tote Bag", 
         "brand": "Mansur Gavriel", 
-        "price": 495, 
+        "price": 495.0, 
         "image": "/assets/accessory-1.jpg", 
         "category": "Accessories",
         "description": "Timeless leather tote crafted from vegetable-tanned Italian leather. Spacious interior with contrast lining, perfect for work or weekend adventures.",
@@ -104,7 +127,7 @@ def init_products():
         "id": 8, 
         "name": "Silk Neck Scarf", 
         "brand": "Totême", 
-        "price": 145, 
+        "price": 145.0, 
         "image": "/assets/accessory-2.jpg", 
         "category": "Accessories",
         "description": "Versatile silk scarf in a signature print, perfect for adding a touch of elegance to any ensemble. Wear it around your neck, in your hair, or tied to your favorite bag.",
@@ -116,7 +139,7 @@ def init_products():
         "id": 9, 
         "name": "Gold Circle Jewelry Set", 
         "brand": "Mejuri", 
-        "price": 225, 
+        "price": 225.0, 
         "image": "/assets/accessory-3.jpg", 
         "category": "Accessories",
         "description": "Minimalist jewelry set featuring delicate gold vermeil pieces. Includes hoop earrings, pendant necklace, and stackable ring for effortless everyday elegance.",
@@ -125,7 +148,9 @@ def init_products():
         "details": ["18k Gold Vermeil", "Sterling silver base", "Hypoallergenic", "Tarnish-resistant coating"]
       },
     ]
-    for p in mock_products:
-        products.append(Product(**p))
 
-init_products()
+    for p in mock_products:
+        db_product = models.Product(**p)
+        db.add(db_product)
+    
+    db.commit()

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, File, UploadFile, Form
-from ..models import TryOnResult
+from ..schemas import TryOnResult
 import os 
 import shutil
 import uuid
